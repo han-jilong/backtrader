@@ -4,7 +4,7 @@ from __future__ import (absolute_import, division, print_function,
 import datetime  # For datetime objects
 import os.path  # To manage paths
 import sys  # To find out the script name (in argv[0])
-
+import pandas as pd
 # Import the backtrader platform
 import backtrader as bt
 
@@ -31,17 +31,17 @@ class TestStrategy(bt.Strategy):
 
         # Add a MovingAverageSimple indicator
         self.sma = bt.indicators.SimpleMovingAverage(
-            self.datas[0], period=self.params.maperiod)
+            self.dataclose, period=self.params.maperiod)
 
-        # Indicators for the plotting show
-        bt.indicators.ExponentialMovingAverage(self.datas[0], period=25)
-        bt.indicators.WeightedMovingAverage(self.datas[0], period=25,
-                                            subplot=True)
-        bt.indicators.StochasticSlow(self.datas[0])
-        bt.indicators.MACDHisto(self.datas[0])
-        rsi = bt.indicators.RSI(self.datas[0])
-        bt.indicators.SmoothedMovingAverage(rsi, period=10)
-        bt.indicators.ATR(self.datas[0], plot=False)
+        # # Indicators for the plotting show
+        # bt.indicators.ExponentialMovingAverage(self.datas[0], period=25)
+        # bt.indicators.WeightedMovingAverage(self.datas[0], period=25,
+        #                                     subplot=True)
+        # bt.indicators.StochasticSlow(self.datas[0])
+        # bt.indicators.MACDHisto(self.datas[0])
+        # rsi = bt.indicators.RSI(self.datas[0])
+        # bt.indicators.SmoothedMovingAverage(rsi, period=10)
+        # bt.indicators.ATR(self.datas[0], plot=False)
 
     def notify_order(self, order):
         if order.status in [order.Submitted, order.Accepted]:
@@ -121,19 +121,16 @@ if __name__ == '__main__':
     # Datas are in a subfolder of the samples. Need to find where the script is
     # because it could have been called from anywhere
     modpath = os.path.dirname(os.path.abspath(sys.argv[0]))
-    datapath = os.path.join(modpath, '.\\datas\\yhoo-2003-2005.txt')
+    datapath = os.path.join(modpath, '.\\datas\\399300.csv')
 
-    # Create a Data Feed
-    data = bt.feeds.YahooFinanceCSVData(
-        dataname=datapath,
-        # Do not pass values before this date
-        fromdate=datetime.datetime(2003, 1, 2),
-        # Do not pass values after this date
-        todate=datetime.datetime(2005, 12, 30),
-        reverse=False)
+    dataframe = pd.read_csv(datapath)
+    dataframe['trade_date'] = pd.to_datetime(dataframe['trade_date'])
+    dataframe.set_index('trade_date', inplace=True)
+    dataframe['openinterest'] = 0
+    brf_daily = bt.feeds.PandasData(dataname=dataframe, fromdate=datetime.datetime(2012, 1, 4),
+                                    todate=datetime.datetime(2021, 12, 31))
 
-    # Add the Data Feed to Cerebro
-    cerebro.adddata(data)
+    cerebro.adddata(brf_daily)
 
     # Set our desired cash start
     cerebro.broker.setcash(1000.0)
