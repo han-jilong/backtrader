@@ -4,21 +4,23 @@ from __future__ import (absolute_import, division, print_function,
 import datetime  # For datetime objects
 import os.path  # To manage paths
 import sys  # To find out the script name (in argv[0])
-import pandas as pd
 # Import the backtrader platform
 import backtrader as bt
-
+from extends.DataFeeds import GenericCSV_BaoShare
+from utils.Utils import GetDataName
 
 # Create a Stratey
 class TestStrategy(bt.Strategy):
     params = (
-        ('maperiod', 30),
+        ('maperiod', 15),
+        ('printlog', True),
     )
 
-    def log(self, txt, dt=None):
+    def log(self, txt, dt=None, doprint=False):
         ''' Logging function fot this strategy'''
-        dt = dt or self.datas[0].datetime.date(0)
-        print('%s, %s' % (dt.isoformat(), txt))
+        if self.params.printlog or doprint:
+            dt = dt or self.datas[0].datetime.date(0)
+            print('%s, %s' % (dt.isoformat(), txt))
 
     def __init__(self):
         # Keep a reference to the "close" line in the data[0] dataseries
@@ -31,17 +33,7 @@ class TestStrategy(bt.Strategy):
 
         # Add a MovingAverageSimple indicator
         self.sma = bt.indicators.SimpleMovingAverage(
-            self.dataclose, period=self.params.maperiod)
-
-        # # Indicators for the plotting show
-        # bt.indicators.ExponentialMovingAverage(self.datas[0], period=25)
-        # bt.indicators.WeightedMovingAverage(self.datas[0], period=25,
-        #                                     subplot=True)
-        # bt.indicators.StochasticSlow(self.datas[0])
-        # bt.indicators.MACDHisto(self.datas[0])
-        # rsi = bt.indicators.RSI(self.datas[0])
-        # bt.indicators.SmoothedMovingAverage(rsi, period=10)
-        # bt.indicators.ATR(self.datas[0], plot=False)
+            self.datas[0].close, period=self.params.maperiod)
 
     def notify_order(self, order):
         if order.status in [order.Submitted, order.Accepted]:
@@ -83,7 +75,7 @@ class TestStrategy(bt.Strategy):
 
     def next(self):
         # Simply log the closing price of the series from the reference
-        self.log('Close, %.2f' % self.dataclose[0])
+        # self.log('Close, %.2f' % self.dataclose[0])
 
         # Check if an order is pending ... if yes, we cannot send a 2nd one
         if self.order:
@@ -108,7 +100,11 @@ class TestStrategy(bt.Strategy):
                 self.log('SELL CREATE, %.2f' % self.dataclose[0])
 
                 # Keep track of the created order to avoid a 2nd order
-                self.order = self.sell()
+                self.order = self.close()
+
+    def stop(self):
+        self.log('(MA Period %2d) Ending Value %.2f' %
+                 (self.params.maperiod, self.broker.getvalue()), doprint=True)
 
 
 if __name__ == '__main__':
@@ -116,39 +112,30 @@ if __name__ == '__main__':
     cerebro = bt.Cerebro()
 
     # Add a strategy
-    cerebro.addstrategy(TestStrategy)
+    strats = cerebro.addstrategy(TestStrategy)
 
     # Datas are in a subfolder of the samples. Need to find where the script is
     # because it could have been called from anywhere
     modpath = os.path.dirname(os.path.abspath(sys.argv[0]))
-    datapath = os.path.join(modpath, '.\\datas\\399300.csv')
+    datapath = os.path.join(modpath, '..\\datas\\sh.000104_380能源.csv')
+    dataname = GetDataName(datapath)
+    # Create a Data Feed
+    data = GenericCSV_BaoShare(dataname=datapath)
 
-    dataframe = pd.read_csv(datapath)
-    dataframe['trade_date'] = pd.to_datetime(dataframe['trade_date'])
-    dataframe.set_index('trade_date', inplace=True)
-    dataframe['openinterest'] = 0
-    brf_daily = bt.feeds.PandasData(dataname=dataframe, fromdate=datetime.datetime(2012, 1, 4),
-                                    todate=datetime.datetime(2021, 12, 31))
-
-    cerebro.adddata(brf_daily)
+    # Add the Data Feed to Cerebro
+    cerebro.adddata(data=data, name=dataname)
 
     # Set our desired cash start
-    cerebro.broker.setcash(1000.0)
+    cerebro.broker.setcash(1000000.0)
 
     # Add a FixedSize sizer according to the stake
     cerebro.addsizer(bt.sizers.FixedSize, stake=10)
 
     # Set the commission
-    cerebro.broker.setcommission(commission=0.001)
-
+    cerebro.broker.setcommission(commission=0.0)
     # Print out the starting conditions
     print('Starting Portfolio Value: %.2f' % cerebro.broker.getvalue())
-
-    # Run over everything
     cerebro.run()
-
     # Print out the final result
     print('Final Portfolio Value: %.2f' % cerebro.broker.getvalue())
-
-    # Plot the result
     cerebro.plot()
