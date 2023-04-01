@@ -34,13 +34,13 @@ class DoubleMA_Strategy(bt.Strategy):
         self.order = None
 
         # 计算MA5
-        self.smaFast = bt.ind.MovingAverageSimple(self.data.close, period=self.params.smaFast)
+        self.smaFast = bt.ind.ExponentialMovingAverage(self.data.close, period=self.params.smaFast)
 
         # 计算MA20
-        self.smaSlow = bt.ind.MovingAverageSimple(self.data.close, period=self.params.smaSlow)
+        self.smaSlow = bt.ind.ExponentialMovingAverage(self.data.close, period=self.params.smaSlow)
 
-        self.smafv = bt.ind.MovingAverageSimple(self.data.volume, period=self.params.smafv)
-        self.smasv = bt.ind.MovingAverageSimple(self.data.volume, period=self.params.smasv)
+        self.smafv = bt.ind.ExponentialMovingAverage(self.data.volume, period=self.params.smafv)
+        self.smasv = bt.ind.ExponentialMovingAverage(self.data.volume, period=self.params.smasv)
 
     def notify_order(self, order):
         # 等待订单提交，订单被cerebro接受
@@ -104,7 +104,7 @@ if __name__ == "__main__":
     cerebro.addstrategy(DoubleMA_Strategy)  # 添加策略
     # 准备股票日线数据，输入到backtrader
     modpath = os.path.dirname(os.path.abspath(sys.argv[0]))
-    datapath = os.path.join(modpath, '..\\datas\\sh.000104_380能源.csv')
+    datapath = os.path.join(modpath, '..\\datas\\sh.000104_380能源_weekly.csv')
     dataname = GetDataName(datapath)
     # Create a Data Feed
     data = GenericCSV_BaoShare(dataname=datapath)

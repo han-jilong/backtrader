@@ -1,4 +1,5 @@
 import os
+import sys
 
 
 def GetDataName(filePath):
@@ -11,3 +12,12 @@ def GetDataName(filePath):
     tmpArr = baseName.split('_')
     name = tmpArr[1].split('.')[0]
     return name
+
+def GetStartDate():
+    return "2012-01-01"
+
+def GetEndDate():
+    return "2022-12-30"
+
+def GetModPath():
+    return os.path.dirname(os.path.abspath(sys.argv[0]))

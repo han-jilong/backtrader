@@ -2,7 +2,6 @@ import os
 import sys
 import baostock as bs
 import pandas as pd
-
 from utils.Utils import GetStartDate
 from utils.Utils import GetEndDate
 from utils.Utils import GetModPath
@@ -10,8 +9,9 @@ from utils.Utils import GetModPath
 modpath = GetModPath()
 start_date = GetStartDate()
 end_date = GetEndDate()
+columns = "date,code,open,high,low,close,volume,amount,adjustflag,turn,pctChg"
 
-columns = "date,code,open,high,low,close,preclose,volume,amount,pctChg"
+
 
 def get_index_basic_info():
     datapath = os.path.join(modpath, '..\\datas\\一级行业指数.csv')
@@ -24,7 +24,7 @@ def get_index_basic_info():
 def get_index_history_data(code, start_date, end_date):
     # 详细指标参数，参见“历史行情指标参数”章节；“周月线”参数与“日线”参数不同。
     # 周月线指标：date,code,open,high,low,close,volume,amount,adjustflag,turn,pctChg
-    rs = bs.query_history_k_data_plus(code, columns, start_date=start_date, end_date=end_date, frequency="d")
+    rs = bs.query_history_k_data_plus(code, columns, start_date=start_date, end_date=end_date, frequency="w")
     # 打印结果集
     data_list = []
     while (rs.error_code == '0') & rs.next():
@@ -40,8 +40,6 @@ if __name__ == '__main__':
     # 显示登陆返回信息
     print('login respond error_code:' + lg.error_code)
     print('login respond  error_msg:' + lg.error_msg)
-    start_date = '2012-01-01'
-    end_date = '2022-12-30'
     df = get_index_basic_info()
     i = 0
     for ind, row in df.iterrows():
@@ -52,7 +50,7 @@ if __name__ == '__main__':
         index_code = row['指数代码']
         index_name = row['指数简称'].replace(" ", "")
         hist_data = get_index_history_data(index_code, start_date, end_date)
-        file_name = index_code + "_" + index_name + ".csv"
+        file_name = index_code + "_" + index_name + "_weekly.csv"
         datapath = os.path.join(modpath, '..\\datas\\' + file_name)
         hist_data.to_csv(datapath)
         print(index_name + " done")
