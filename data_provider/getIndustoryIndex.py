@@ -11,7 +11,7 @@ modpath = GetModPath()
 start_date = GetStartDate()
 end_date = GetEndDate()
 
-columns = "date,code,open,high,low,close,preclose,volume,amount,pctChg"
+columns = "date,code,open,high,low,close,preclose,volume,amount,pctChg,peTTM,pbMRQ,psTTM,pcfNcfTTM"
 
 def get_index_basic_info():
     datapath = os.path.join(modpath, '..\\datas\\一级行业指数.csv')
@@ -24,7 +24,7 @@ def get_index_basic_info():
 def get_index_history_data(code, start_date, end_date):
     # 详细指标参数，参见“历史行情指标参数”章节；“周月线”参数与“日线”参数不同。
     # 周月线指标：date,code,open,high,low,close,volume,amount,adjustflag,turn,pctChg
-    rs = bs.query_history_k_data_plus(code, columns, start_date=start_date, end_date=end_date, frequency="d")
+    rs = bs.query_history_k_data_plus(code, columns, start_date=start_date, end_date=end_date, frequency="d", adjustflag="1")
     # 打印结果集
     data_list = []
     while (rs.error_code == '0') & rs.next():

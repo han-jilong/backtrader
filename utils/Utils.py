@@ -14,7 +14,7 @@ def GetDataName(filePath):
     return name
 
 def GetStartDate():
-    return "2012-01-01"
+    return "2007-01-01"
 
 def GetEndDate():
     return "2022-12-30"
