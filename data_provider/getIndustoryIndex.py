@@ -40,8 +40,6 @@ if __name__ == '__main__':
     # 显示登陆返回信息
     print('login respond error_code:' + lg.error_code)
     print('login respond  error_msg:' + lg.error_msg)
-    start_date = '2012-01-01'
-    end_date = '2022-12-30'
     df = get_index_basic_info()
     i = 0
     for ind, row in df.iterrows():
@@ -53,7 +51,10 @@ if __name__ == '__main__':
         index_name = row['指数简称'].replace(" ", "")
         hist_data = get_index_history_data(index_code, start_date, end_date)
         file_name = index_code + "_" + index_name + ".csv"
-        datapath = os.path.join(modpath, '..\\datas\\' + file_name)
+        dir = os.path.join(modpath, '..\\datas\\IndustoryIndex\\')
+        if not os.path.isdir(dir):
+            os.makedirs(dir)
+        datapath = os.path.join(modpath, '..\\datas\\IndustoryIndex\\' + file_name)
         hist_data.to_csv(datapath)
         print(index_name + " done")
     # 登出系统

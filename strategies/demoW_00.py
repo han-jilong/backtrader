@@ -11,11 +11,13 @@ import sys
 
 import pandas as pd
 import backtrader as bt
+from matplotlib import pyplot as plt
 
 from extends.DataFeeds import GenericCSV_BaoShare
 from utils.Utils import GetDataName
 
-
+plt.rcParams['font.sans-serif']=['SimHei'] #显示中文标签
+plt.rcParams['axes.unicode_minus']=False
 class DoubleMA_Strategy(bt.Strategy):
     params = (
         ("smaFast", 20),
@@ -33,14 +35,14 @@ class DoubleMA_Strategy(bt.Strategy):
         # 用于保存订单
         self.order = None
 
-        # 计算MA5
+        # 计算快均线
         self.smaFast = bt.ind.ExponentialMovingAverage(self.data.close, period=self.params.smaFast)
 
-        # 计算MA20
+        # 计算慢均线
         self.smaSlow = bt.ind.ExponentialMovingAverage(self.data.close, period=self.params.smaSlow)
 
-        self.smafv = bt.ind.ExponentialMovingAverage(self.data.volume, period=self.params.smafv)
-        self.smasv = bt.ind.ExponentialMovingAverage(self.data.volume, period=self.params.smasv)
+        # self.smafv = bt.ind.ExponentialMovingAverage(self.data.volume, period=self.params.smafv)
+        # self.smasv = bt.ind.ExponentialMovingAverage(self.data.volume, period=self.params.smasv)
 
     def notify_order(self, order):
         # 等待订单提交，订单被cerebro接受
@@ -51,15 +53,17 @@ class DoubleMA_Strategy(bt.Strategy):
         if order.status in [order.Completed]:
             if order.isbuy():
                 self.log(
-                    '买入，价格: %.2f, 成本: %.2f, 佣金 %.2f' %
-                    (order.executed.price,
+                    '买入 %s，价格: %.2f, 成本: %.2f, 佣金 %.2f' %
+                    (self.data._name,
+                     order.executed.price,
                      order.executed.value,
                      order.executed.comm)
                 )
             else:
                 self.log(
-                    '卖出，价格: %.2f, 成本: %.2f, 佣金 %.2f' %
-                    (order.executed.price,
+                    '卖出 %s，价格: %.2f, 成本: %.2f, 佣金 %.2f' %
+                    (self.data._name,
+                     order.executed.price,
                      order.executed.value,
                      order.executed.comm)
                 )
@@ -74,7 +78,7 @@ class DoubleMA_Strategy(bt.Strategy):
         if not trade.isclosed:
             return
 
-        self.log('盈利： %.2f, 手续费： %.2f\n' %
+        self.log('盈利： %.2f, 净利润： %.2f\n' %
                  (trade.pnl, trade.pnlcomm))  # pnl：盈利  pnlcomm：手续费
 
     def next(self):
@@ -100,6 +104,7 @@ class DoubleMA_Strategy(bt.Strategy):
 
 
 if __name__ == "__main__":
+    start_cash = float(10000000.0)
     cerebro = bt.Cerebro()  # 实例化大脑
     cerebro.addstrategy(DoubleMA_Strategy)  # 添加策略
     # 准备股票日线数据，输入到backtrader
@@ -112,12 +117,21 @@ if __name__ == "__main__":
     # Add the Data Feed to Cerebro
     cerebro.adddata(data=data, name=dataname)
 
-    cerebro.broker.setcash(1000000000.0)  # 初始资金
+    cerebro.broker.setcash(start_cash)  # 初始资金
     cerebro.broker.setcommission(commission=0.0003)  # 佣金，双边各 0.0003
     # cerebro.broker.set_slippage_perc(perc=0.0001)  # 滑点：双边各 0.0001
+    cerebro.addsizer(bt.sizers.PercentSizer, percents=70)
+    cerebro.addanalyzer(bt.analyzers.TimeReturn, timeframe=bt.TimeFrame.Years)
 
     print('Starting Portfolio Value: %.2f' % cerebro.broker.getvalue())  # 打印初始现金
-    cerebro.run()  # 执行策略
+    results = cerebro.run()  # 执行策略
+    strat0 = results[0]
+    # If no name has been specified, the name is the class name lowercased
+    tret_analyzer = strat0.analyzers.getbyname('timereturn')
+    print(tret_analyzer.get_analysis())
+    end_cash = float(cerebro.broker.getvalue())
+    diff = end_cash - start_cash
     print('Ending Portfolio Value: %.2f' % cerebro.broker.getvalue())  # 打印策略运行结束后的现金
+    print('win or loss: %.2f percent' % (diff*100/start_cash))
 
-    cerebro.plot(style='candlestick', volume=True)  # 可视化
+    # cerebro.plot(style='candlestick', volume=True)  # 可视化

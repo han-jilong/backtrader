@@ -51,7 +51,10 @@ if __name__ == '__main__':
         index_name = row['指数简称'].replace(" ", "")
         hist_data = get_index_history_data(index_code, start_date, end_date)
         file_name = index_code + "_" + index_name + "_weekly.csv"
-        datapath = os.path.join(modpath, '..\\datas\\' + file_name)
+        dir = os.path.join(modpath, '..\\datas\\IndustoryIndexWeekly\\')
+        if not os.path.isdir(dir):
+            os.makedirs(dir)
+        datapath = os.path.join(modpath, '..\\datas\\IndustoryIndexWeekly\\' + file_name)
         hist_data.to_csv(datapath)
         print(index_name + " done")
     # 登出系统
