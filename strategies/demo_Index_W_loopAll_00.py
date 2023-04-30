@@ -8,17 +8,21 @@ BY - SA版权协议，转载请附上原文出处链接及本声明。
 '''
 import os
 import sys
+import time
 
 import pandas as pd
 import backtrader as bt
 from matplotlib import pyplot as plt
-
+from utils.ExcelUtils import Write_result
 from extends.DataFeeds import GenericCSV_BaoShare
 from utils.Utils import GetDataName, GetDataNameAndCode
 
 plt.rcParams['font.sans-serif'] = ['SimHei']  # 显示中文标签
 plt.rcParams['axes.unicode_minus'] = False
 
+details_info = []
+annual_info = []
+total_results = []
 
 class DoubleMA_Strategy(bt.Strategy):
     params = (
@@ -66,6 +70,7 @@ class DoubleMA_Strategy(bt.Strategy):
                      order.executed.value,
                      order.executed.comm)
                 )
+                details_info.append((self.data.datetime.date(0).strftime("%Y-%m-%d"), self.data._name, '买入', order.executed.price, order.executed.value,order.executed.comm))
             else:
                 self.log(
                     '卖出 %s，价格: %.2f, 成本: %.2f, 佣金 %.2f' %
@@ -74,6 +79,8 @@ class DoubleMA_Strategy(bt.Strategy):
                      order.executed.value,
                      order.executed.comm)
                 )
+
+                details_info.append((str(self.data.datetime.date(0)), self.data._name, '卖出', order.executed.price, order.executed.value, order.executed.comm))
 
         # 如果订单保证金不足，将不会执行，而是执行以下拒绝程序
         elif order.status in [order.Cancled, order.Margin, order.Rejected]:
@@ -87,6 +94,7 @@ class DoubleMA_Strategy(bt.Strategy):
 
         self.log('盈利： %.2f, 净利润： %.2f\n' %
                  (trade.pnl, trade.pnlcomm))  # pnl：盈利  pnlcomm：手续费
+        details_info.append((str(self.data.datetime.date(0)), "盈利：" + str(trade.pnl), "净利润：" + str(trade.pnlcomm)))
 
     def next(self):
         # Check if an order is pending ... if yes, we cannot send a 2nd one
@@ -138,14 +146,24 @@ def back_test_one(data_path):
     tret_analyzer = strat0.analyzers.getbyname('timereturn').get_analysis()
     for key in tret_analyzer:
         print('date %s : result %s' % (key, tret_analyzer[key]))
+        annual_info.append((data_name,key, tret_analyzer[key]))
     end_cash = float(cerebro.broker.getvalue())
     diff = end_cash - start_cash
     print('start cash %.2f end cash: %.2f' % (start_cash, end_cash))  # 打印策略运行结束后的现金
     print('total win or loss: %.2f percent' % (diff * 100 / start_cash))
+    total_results.append((data_name, start_cash, end_cash, diff, diff * 100 / start_cash))
     # img = cerebro.plot(style='candlestick', volume=True)  # 可视化
     # img[0][0].savefig(f'data/cerebro_{data_name}_.png')
 
+def addSplitToResult(details_info, annual_info, total_results):
+    details_info.append((""))
+    annual_info.append((""))
+    # total_results.append((""))
+
 if __name__ == "__main__":
+    details_info = []
+    annual_info = []
+    total_results = []
 
     modpath = os.path.dirname(os.path.abspath(sys.argv[0]))
     modpath = os.path.abspath(os.path.join(modpath, ".."))
@@ -155,7 +173,6 @@ if __name__ == "__main__":
         for filename in filenames:
             data_file_path = os.path.join(filepath, filename)
             back_test_one(data_file_path)
-            i = i + 1
-            if i > 3:
-                break
+            addSplitToResult(details_info, annual_info, total_results)
+    Write_result(details_info, annual_info, total_results)
     print("done! tested %d data files" % i)
