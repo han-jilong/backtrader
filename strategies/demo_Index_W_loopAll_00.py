@@ -146,14 +146,14 @@ def back_test_one(data_path):
     tret_analyzer = strat0.analyzers.getbyname('timereturn').get_analysis()
     for key in tret_analyzer:
         print('date %s : result %s' % (key, tret_analyzer[key]))
-        annual_info.append((data_name,key, tret_analyzer[key]))
+        annual_info.append((data_name, key, tret_analyzer[key]))
     end_cash = float(cerebro.broker.getvalue())
     diff = end_cash - start_cash
     print('start cash %.2f end cash: %.2f' % (start_cash, end_cash))  # 打印策略运行结束后的现金
     print('total win or loss: %.2f percent' % (diff * 100 / start_cash))
     total_results.append((data_name, start_cash, end_cash, diff, diff * 100 / start_cash))
-    # img = cerebro.plot(style='candlestick', volume=True)  # 可视化
-    # img[0][0].savefig(f'data/cerebro_{data_name}_.png')
+    img = cerebro.plot(style='candlestick', volume=True)  # 可视化
+    img[0][0].savefig(f'cerebro_{code}_{data_name}_.png')
 
 def addSplitToResult(details_info, annual_info, total_results):
     details_info.append((""))
